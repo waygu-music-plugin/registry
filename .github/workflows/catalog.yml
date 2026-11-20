@@ -1,0 +1,37 @@
+name: Publish catalog
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Stable tag already published in all four plugin repositories
+        required: true
+
+permissions:
+  contents: write
+
+concurrency: official-catalog
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    env:
+      TAG: ${{ inputs.tag }}
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v7
+      - name: Verify signed plugin releases
+        run: python3 update_catalog.py "$TAG"
+      - name: Publish catalog
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add catalog.json
+          if ! git diff --cached --quiet; then
+            git commit -m "Publish catalog for $TAG"
+            git push origin HEAD:main
+          fi
+          if ! gh release view "$TAG" -R "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            gh release create "$TAG" -R "$GITHUB_REPOSITORY" --target "$(git rev-parse HEAD)" --title "$TAG" \
+              --notes '包含四个正式插件发行的官方目录。' catalog.json
+          fi
