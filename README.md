@@ -23,4 +23,4 @@ https://raw.githubusercontent.com/waygu-music-plugin/registry/main/catalog.json
 python3 build_release.py --source ../songloft --tag v0.1.0 --key /path/to/publisher.pem --out ./build/songloft
 ```
 
-先在相应插件仓库发布生成的文件，再将该版本的 `catalog.json` 中对应的包条目写入本目录。已安装的插件会固定来源和签名公钥。
+插件仓库的 Release 工作流负责构建和发布。发布后运行本仓库的 Publish catalog 工作流。它会验证每个插件的最新正式版并更新目录，各插件可独立发版。填写 `snapshot_tag` 可以同时发布目录快照。已安装的插件会固定来源和签名公钥。

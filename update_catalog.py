@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 """Update the official directory after verifying published plugin releases."""
 
-import argparse
 import base64
 import json
 from pathlib import Path
@@ -16,9 +15,7 @@ ORG = "waygu-music-plugin"
 TARGETS = {(os, arch) for os in RUNTIMES for arch in ("amd64", "arm64")}
 
 
-def update(tag, root):
-    if not re.fullmatch(r"v\d+\.\d+\.\d+", tag):
-        raise ValueError("expected a stable plugin release tag")
+def update(root):
     public = (root / "publisher-key.txt").read_text().strip()
     key = base64.b64decode(public, validate=True)
     entries = []
@@ -28,9 +25,10 @@ def update(tag, root):
         pubfile.write_bytes(bytes.fromhex("302a300506032b6570032100") + key)
         for pack in ENTRIES:
             repo = f"{ORG}/{pack}"
-            release = json.loads(subprocess.check_output(["gh", "api", f"repos/{repo}/releases/tags/{tag}"]))
-            if release["draft"] or release["prerelease"]:
-                raise ValueError(f"{repo} {tag} is not a stable release")
+            release = json.loads(subprocess.check_output(["gh", "api", f"repos/{repo}/releases/latest"]))
+            tag = release["tag_name"]
+            if release["draft"] or release["prerelease"] or not re.fullmatch(r"v\d+\.\d+\.\d+", tag):
+                raise ValueError(f"{repo} {tag} is not a stable plugin release")
             folder = work / pack
             subprocess.run(["gh", "release", "download", tag, "-R", repo,
                             "--pattern", "manifest.json", "-D", folder], check=True)
@@ -60,12 +58,5 @@ def update(tag, root):
     write_json(root / "catalog.json", {"Format": 1, "Packages": entries})
 
 
-def main():
-    parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("tag")
-    args = parser.parse_args()
-    update(args.tag, Path(__file__).resolve().parent)
-
-
 if __name__ == "__main__":
-    main()
+    update(Path(__file__).resolve().parent)
