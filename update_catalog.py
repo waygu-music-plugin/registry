@@ -9,7 +9,7 @@ import subprocess
 from tempfile import TemporaryDirectory
 from urllib.parse import urlparse
 
-from build_release import ENTRIES, PROTOCOL, RUNTIMES, write_json
+from build_release import ENTRIES, NAMES, PROTOCOL, RUNTIMES, write_json
 
 ORG = "waygu-music-plugin"
 TARGETS = {(os, arch) for os in RUNTIMES for arch in ("amd64", "arm64")}
@@ -54,7 +54,8 @@ def update(root):
                 if (item["URL"] != url + name or asset["size"] != item["Size"] or
                         (digest and digest != "sha256:" + item["SHA256"])):
                     raise ValueError(f"incorrect GitHub release asset {name}")
-            entries.append({"Package": pack, "Manifest": url + "manifest.json", "PublicKey": public})
+            entries.append({"Package": pack, "Name": manifest.get("Name") or NAMES[pack],
+                            "Manifest": url + "manifest.json", "PublicKey": public})
     write_json(root / "catalog.json", {"Format": 1, "Packages": entries})
 
 

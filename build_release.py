@@ -18,6 +18,12 @@ ENTRIES = {
     "netease": ["netease"],
     "qqmusic": ["qqmusic"],
 }
+NAMES = {
+    "songloft": "Songloft",
+    "subsonic": "Subsonic",
+    "netease": "网易云音乐",
+    "qqmusic": "QQ 音乐",
+}
 RUNTIMES = {
     "windows": ["Windows 10 or 11"],
     "darwin": ["macOS 13 or later"],
@@ -74,7 +80,7 @@ def build(source, tag, key, out):
                                   "Size": archive.stat().st_size, "SHA256": digest(archive),
                                   "EntrySHA256": digest(binary), "Runtime": RUNTIMES[goos]})
         release = {"Format": 1, "Protocol": PROTOCOL, "Package": name, "Version": tag[1:],
-                   "Entries": ENTRIES[name], "Artifacts": artifacts}
+                   "Name": NAMES[name], "Entries": ENTRIES[name], "Artifacts": artifacts}
         payload = work / "manifest.json"
         raw = json.dumps(release, separators=(",", ":")).encode()
         payload.write_bytes(raw)
@@ -82,7 +88,7 @@ def build(source, tag, key, out):
         encoded = json.dumps(base64.b64encode(signature).decode("ascii")).encode()
         (out / "manifest.json").write_bytes(b'{"Manifest":' + raw + b',"Signature":' + encoded + b'}\n')
         write_json(out / "catalog.json", {"Format": 1, "Packages": [
-            {"Package": name, "Manifest": f"{origin}/manifest.json", "PublicKey": public_key}]})
+            {"Package": name, "Name": NAMES[name], "Manifest": f"{origin}/manifest.json", "PublicKey": public_key}]})
         (out / "SHA256SUMS").write_text("".join(f"{a['SHA256']}  {Path(a['URL']).name}\n" for a in artifacts),
                                         encoding="utf-8")
 
